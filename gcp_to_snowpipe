@@ -1,0 +1,97 @@
+create a bucket and 
+
+create a topic
+
+create a subscription
+
+gs://divya56/
+
+login into cloud shell 
+
+gsutil notification create \
+-t pras_topic  \
+-f json \
+-e OBJECT_FINALIZE \
+gs://sun-4256/
+
+=================================
+
+step1:
+
+CREATE OR REPLACE TABLE EMPLOYEE (
+    EMPNO NUMBER(10)      NOT NULL,
+    ENAME VARCHAR(100),
+    SAL   NUMBER(10,2)
+);
+
+
+
+Step2:
+
+CREATE OR REPLACE FILE FORMAT my_csv_format
+TYPE = CSV
+SKIP_HEADER = 1;
+
+
+Step3:
+
+CREATE STORAGE INTEGRATION mygcp_data22
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = GCS
+  ENABLED = TRUE
+  STORAGE_ALLOWED_LOCATIONS = ('gcs://newsfgcp-snowpipe/');
+
+
+
+ DESC INTEGRATION mygcp_data22;  it will produce the service accounts
+
+gvbosquibg@azcentralindia-1-5514.iam.gserviceaccount.com
+
+copy this serviceaccount details and grant Storage Admin
+
+step4:
+
+   CREATE OR REPLACE STAGE my_gcs_stage1
+  URL = 'gcs://newsfgcp-snowpipe/'
+  STORAGE_INTEGRATION = mygcp_data22
+  FILE_FORMAT = my_csv_format;
+
+Step5:
+
+CREATE OR REPLACE NOTIFICATION INTEGRATION GCP_NOTIFI
+TYPE = QUEUE
+ENABLED = TRUE
+NOTIFICATION_PROVIDER = GCP_PUBSUB
+GCP_PUBSUB_SUBSCRIPTION_NAME ='projects/project-b8fc8724-8adc-4499-9a4/subscriptions/mysubscri';
+
+DESC NOTIFICATION INTEGRATION GCP_NOTIFI;
+
+rzurhfqgcz@azcentralindia-1-5514.iam.gserviceaccount.com  copy this and add pub/sub subscriber
+
+Step6:
+
+IAM & Admin ==>> IAM ==> GrantAccess  to Monitoring viewer
+
+
+step7:
+
+CREATE OR REPLACE PIPE EMPLOYEE_PIPE
+AUTO_INGEST = TRUE
+INTEGRATION = 'GCP_NOTIFI'
+AS
+COPY INTO EMPLOYEE
+FROM @my_gcs_stage21
+FILE_FORMAT = my_csv_format;
+
+
+
+   
+COPY INTO PUBLIC.EMPLOYEE
+  FROM @my_gcs_stage1
+  FILE_FORMAT = my_csv_format
+
+  ON_ERROR = CONTINUE;
+
+  list @my_gcs_stage1
+
+  select * from employee
